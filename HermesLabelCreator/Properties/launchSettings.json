@@ -1,0 +1,18 @@
+{
+  "profiles": {
+    "HermesLabelCreatorDev": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\Users\\vzubenko\\Desktop\\test",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "HermesLabelCreatorProd": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\Users\\vzubenko\\Desktop\\test",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Production"
+      }
+    }
+  }
+}

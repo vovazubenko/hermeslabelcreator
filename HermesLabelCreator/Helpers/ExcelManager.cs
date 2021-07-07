@@ -21,8 +21,8 @@ namespace HermesLabelCreator.Helpers
             SpreadsheetInfo.SetLicense("FREE-LIMITED-KEY");
             // Create new CSV file.
             var csvFile = ExcelFile.Load(csvFileName, new CsvLoadOptions(CsvType.CommaDelimited));
-            csvFile.Worksheets.Add("Worksheet");
-            csvFile.Save(Path.Combine(directoryPath, Path.GetFileNameWithoutExtension(csvFileName) + ".xlsx"), new XlsxSaveOptions());
+            csvFile.Worksheets.Add("csv");
+            csvFile.Save(Path.Combine(directoryPath, Path.GetFileNameWithoutExtension(csvFileName) + DateTime.Now.ToString("YYYYmmddhhmmss") + ".xlsx"), new XlsxSaveOptions());
             
             return Path.Combine(directoryPath, Path.GetFileNameWithoutExtension(csvFileName) + ".xlsx");
         }

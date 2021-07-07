@@ -53,7 +53,7 @@ namespace HermesLabelCreator
                     newImportFile = ExcelManager.ConvertCsvToExcel(importFile);
                 }
 
-                string exportFile = $"{fullExportPath}\\excel_export_{DateTime.Now:ddMMyyyy_hhmm}{Path.GetExtension(newImportFile)}";
+                string exportFile = $"{fullExportPath}\\{(extension.Equals(".csv") ? "csv" : "excel")}_export_{DateTime.Now:ddMMyyyy_hhmm}{Path.GetExtension(newImportFile)}";
                 File.Copy(newImportFile, exportFile, true);
                 
                 FileStream importFileStream = File.OpenRead(newImportFile);
@@ -166,7 +166,8 @@ namespace HermesLabelCreator
                     });
 
                     importFileStream.Close();
-                    exportFileStream.Close();
+                    spreadSheet.Dispose();
+                    exportFileStream.Dispose();
 
                     if (extension.Equals(".csv"))
                     {
@@ -186,8 +187,7 @@ namespace HermesLabelCreator
                 }
                 finally
                 {
-                    //spreadSheet.Dispose();
-                    //exportFileStream.Dispose();
+                    
                 }
             }
         }

@@ -1,6 +1,7 @@
 ﻿using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
+using GemBox.Spreadsheet;
 using HermesLabelCreator.Models;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,29 @@ namespace HermesLabelCreator.Helpers
 {
     public static class ExcelManager
     {
+        public static string ConvertCsvToExcel(string csvFileName)
+        {
+            string directoryPath = Path.GetDirectoryName(csvFileName);
+            SpreadsheetInfo.SetLicense("FREE-LIMITED-KEY");
+            // Create new CSV file.
+            var csvFile = ExcelFile.Load(csvFileName, new CsvLoadOptions(CsvType.CommaDelimited));
+            csvFile.Worksheets.Add("Worksheet");
+            csvFile.Save(Path.Combine(directoryPath, Path.GetFileNameWithoutExtension(csvFileName) + ".xlsx"), new XlsxSaveOptions());
+            
+            return Path.Combine(directoryPath, Path.GetFileNameWithoutExtension(csvFileName) + ".xlsx");
+        }
+
+        public static string ConvertExcelToCsv(string excelfileFileName)
+        {
+            string directoryPath = Path.GetDirectoryName(excelfileFileName);
+            SpreadsheetInfo.SetLicense("FREE-LIMITED-KEY");
+            // Create new CSV file.
+            var excelFile = ExcelFile.Load(excelfileFileName, new XlsxLoadOptions());
+            excelFile.Save(Path.Combine(directoryPath, Path.GetFileNameWithoutExtension(excelfileFileName) + ".csv"), new CsvSaveOptions(CsvType.CommaDelimited));
+
+            return Path.Combine(directoryPath, Path.GetFileNameWithoutExtension(excelfileFileName) + ".csv");
+        }
+
         public static SpreadsheetCellDto[][] GetRows(Stream xlsxFile)
         {
             MemoryStream documentStream = new MemoryStream();

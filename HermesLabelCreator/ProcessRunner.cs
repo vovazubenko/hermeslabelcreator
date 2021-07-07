@@ -19,7 +19,7 @@ namespace HermesLabelCreator
     {
         private readonly string importFolder = "_import";
         private readonly string exportFolder = "_export";
-        private readonly string[] supportedExtensions = new string[] { "xls", "xlsx" };
+        private readonly string[] supportedExtensions = new string[] { "xls", "xlsx", "csv" };
         private readonly ILogger<ProcessRunner> _logger;
         private readonly Iservice _service;
 
@@ -46,11 +46,17 @@ namespace HermesLabelCreator
 
             foreach (var importFile in importFiles)
             {
-                Path.GetExtension(importFile);
-                string exportFile = $"{fullExportPath}\\csv_export_{DateTime.Now:ddMMyyyy_hhmm}{Path.GetExtension(importFile)}";
-                File.Copy(importFile, exportFile, true);
+                string extension = Path.GetExtension(importFile);
+                string newImportFile = importFile;
+                if (extension.Equals(".csv"))
+                {
+                    newImportFile = ExcelManager.ConvertCsvToExcel(importFile);
+                }
+
+                string exportFile = $"{fullExportPath}\\excel_export_{DateTime.Now:ddMMyyyy_hhmm}{Path.GetExtension(newImportFile)}";
+                File.Copy(newImportFile, exportFile, true);
                 
-                FileStream importFileStream = File.OpenRead(importFile);
+                FileStream importFileStream = File.OpenRead(newImportFile);
                 var rows = ExcelManager.GetRows(importFileStream);
                 var shipments = ImportFileParser.ParseShipments(rows);
 
@@ -160,7 +166,19 @@ namespace HermesLabelCreator
                     });
 
                     importFileStream.Close();
-                    File.Delete(importFile);
+                    exportFileStream.Close();
+
+                    if (extension.Equals(".csv"))
+                    {
+                        ExcelManager.ConvertExcelToCsv(exportFile);
+                        File.Delete(exportFile);
+                    }
+
+                    //File.Delete(newImportFile);
+                    //if (newImportFile != importFile)
+                    //{
+                    //    File.Delete(importFile);
+                    //}
                 }
                 catch
                 {
@@ -168,8 +186,8 @@ namespace HermesLabelCreator
                 }
                 finally
                 {
-                    spreadSheet.Dispose();
-                    exportFileStream.Dispose();
+                    //spreadSheet.Dispose();
+                    //exportFileStream.Dispose();
                 }
             }
         }

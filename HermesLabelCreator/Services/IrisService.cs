@@ -145,9 +145,7 @@ namespace HermesLabelCreator.Services
                         Title = shipment.ShipperTitle,
                         FirstName = shipment.ShipperFirstName,
                         LastName = shipment.ShipperLastName,
-                        Street = string.IsNullOrWhiteSpace(shipment.ShipperStreetNumber)
-                        ? shipment.ShipperStreet
-                        : $"{shipment.ShipperStreet} {shipment.ShipperStreetNumber}",
+                        Street = shipment.ShipperStreet,
                         HouseNo = shipment.ShipperStreetNumber,
                         City = shipment.ShipperCity,
                         PostCode = shipment.ShipperZip,
@@ -185,7 +183,7 @@ namespace HermesLabelCreator.Services
                 }                
             };
 
-            if (!string.IsNullOrWhiteSpace(shipment.Returns) && shipment.Returns == "1")
+            if (!string.IsNullOrWhiteSpace(shipment.Returns) && (shipment.Returns == "1" || shipment.Returns == "2"))
             {
                 request.Returns = new GenerateShipmentLabelRequest.ReturnsInfo
                 {
@@ -207,9 +205,7 @@ namespace HermesLabelCreator.Services
                         Title = shipment.ShipperTitle,
                         FirstName = shipment.ShipperFirstName,
                         LastName = shipment.ShipperLastName,
-                        Street = string.IsNullOrWhiteSpace(shipment.ShipperStreetNumber)
-                        ? shipment.ShipperStreet
-                        : $"{shipment.ShipperStreet} {shipment.ShipperStreetNumber}",
+                        Street = shipment.ShipperStreet,
                         HouseNo = shipment.ShipperStreetNumber,
                         City = shipment.ShipperCity,
                         PostCode = shipment.ShipperZip,

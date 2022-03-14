@@ -87,7 +87,7 @@ namespace HermesLabelCreator
                             ? $"{shipments[i].OrderNumber}_"
                             : string.Empty;
 
-                        if (response.Delivery != null && !string.IsNullOrWhiteSpace(response.Delivery.LabelBase64))
+                        if (response.Delivery != null && !string.IsNullOrWhiteSpace(response.Delivery.LabelBase64) && shipments[i].Returns != "2")
                         {
                             string ending = "H";
                             if (shipments[i].BulkyGoods == "1")

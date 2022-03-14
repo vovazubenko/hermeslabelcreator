@@ -20,11 +20,14 @@ namespace HermesLabelCreator.Helpers
             string directoryPath = Path.GetDirectoryName(csvFileName);
             SpreadsheetInfo.SetLicense("FREE-LIMITED-KEY");
             // Create new CSV file.
-            var csvFile = ExcelFile.Load(csvFileName, new CsvLoadOptions(CsvType.CommaDelimited));
+            var csvFile = ExcelFile.Load(csvFileName, new CsvLoadOptions(CsvType.SemicolonDelimited));
             csvFile.Worksheets.Add("csv");
-            csvFile.Save(Path.Combine(directoryPath, Path.GetFileNameWithoutExtension(csvFileName) + DateTime.Now.ToString("YYYYmmddhhmmss") + ".xlsx"), new XlsxSaveOptions());
+
+            string fileName = Path.Combine(directoryPath, Path.GetFileNameWithoutExtension(csvFileName) + DateTime.Now.ToString("YYYYmmddhhmmss") + ".xlsx");
+
+            csvFile.Save(fileName, new XlsxSaveOptions());
             
-            return Path.Combine(directoryPath, Path.GetFileNameWithoutExtension(csvFileName) + ".xlsx");
+            return fileName;
         }
 
         public static string ConvertExcelToCsv(string excelfileFileName)
@@ -33,7 +36,7 @@ namespace HermesLabelCreator.Helpers
             SpreadsheetInfo.SetLicense("FREE-LIMITED-KEY");
             // Create new CSV file.
             var excelFile = ExcelFile.Load(excelfileFileName, new XlsxLoadOptions());
-            excelFile.Save(Path.Combine(directoryPath, Path.GetFileNameWithoutExtension(excelfileFileName) + ".csv"), new CsvSaveOptions(CsvType.CommaDelimited));
+            excelFile.Save(Path.Combine(directoryPath, Path.GetFileNameWithoutExtension(excelfileFileName) + ".csv"), new CsvSaveOptions(CsvType.SemicolonDelimited));
 
             return Path.Combine(directoryPath, Path.GetFileNameWithoutExtension(excelfileFileName) + ".csv");
         }

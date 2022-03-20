@@ -197,7 +197,7 @@ namespace HermesLabelCreator
                     if (singleFile && labelPaths.Count > 0)
                     {
                         string[] sortedLabelPaths = labelPaths.OrderBy(l => l).ToArray();
-                        string combinedLabelsFilePath = $"{fullExportPath}/Labels_{Path.GetFileNameWithoutExtension(exportFile)}";
+                        string combinedLabelsFilePath = $"{fullExportPath}/Labels_{Path.GetFileNameWithoutExtension(exportFile)}.pdf";
 
                         CombineMultiplePDFs(sortedLabelPaths, combinedLabelsFilePath);
 

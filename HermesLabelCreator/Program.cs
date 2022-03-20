@@ -29,6 +29,12 @@ namespace HermesLabelCreator
                 ? args[0]
                 : string.Empty;
 
+            bool singleFile = false;
+            if (args != null && args.Length > 1)
+            {
+                bool.TryParse(args[1], out singleFile);
+            }
+
             if (string.IsNullOrWhiteSpace(importFolderFilePath))
             {
                 Console.WriteLine("Please enter path to _import directory.");
@@ -36,7 +42,7 @@ namespace HermesLabelCreator
                 return;
             }
 
-            string[] directories = Directory.GetDirectories(importFolderFilePath, "", SearchOption.TopDirectoryOnly);
+            string[] directories = Directory.GetDirectories(importFolderFilePath, string.Empty, SearchOption.TopDirectoryOnly);
             if (!directories.Any(d => new DirectoryInfo(d).Name.Equals("_import")))
             {
                 Console.WriteLine("There is no directory with \"_import\" folder. Please enter valid directory path.");
@@ -83,7 +89,7 @@ namespace HermesLabelCreator
             AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionTrapper;
 
             var process = ActivatorUtilities.CreateInstance<ProcessRunner>(host.Services);
-            process.Run(importFolderFilePath);
+            process.Run(importFolderFilePath, singleFile);
         }
 
         private static void BuildConfig(IConfigurationBuilder builder)

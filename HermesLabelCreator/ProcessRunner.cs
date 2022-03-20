@@ -4,6 +4,8 @@ using DocumentFormat.OpenXml.Spreadsheet;
 using HermesLabelCreator.Configurations;
 using HermesLabelCreator.Helpers;
 using HermesLabelCreator.Interfaces;
+using iTextSharp.text;
+using iTextSharp.text.pdf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -30,7 +32,7 @@ namespace HermesLabelCreator
             _logger = logger;
             _service = service;
         }
-        public void Run(string directoriesPath)
+        public void Run(string directoriesPath, bool singleFile)
         {
             string fullImportPath = Path.Combine(directoriesPath, importFolder);
             string fullExportPath = Path.Combine(directoriesPath, exportFolder);
@@ -46,6 +48,8 @@ namespace HermesLabelCreator
 
             foreach (var importFile in importFiles)
             {
+                List<string> labelPaths = new List<string>();
+
                 string extension = Path.GetExtension(importFile);
                 string newImportFile = importFile;
                 if (extension.Equals(".csv"))
@@ -53,7 +57,7 @@ namespace HermesLabelCreator
                     newImportFile = ExcelManager.ConvertCsvToExcel(importFile);
                 }
 
-                string exportFile = $"{fullExportPath}\\{(extension.Equals(".csv") ? "csv" : "excel")}_export_{DateTime.Now:ddMMyyyy_hhmm}{Path.GetExtension(newImportFile)}";
+                string exportFile = $"{fullExportPath}/{(extension.Equals(".csv") ? "csv" : "excel")}_export_{DateTime.Now:ddMMyyyy_hhmmss}{Path.GetExtension(newImportFile)}";
                 File.Copy(newImportFile, exportFile, true);
                 
                 FileStream importFileStream = File.OpenRead(newImportFile);
@@ -66,7 +70,7 @@ namespace HermesLabelCreator
 
                 try
                 {
-                    var options = new ParallelOptions { MaxDegreeOfParallelism = 4 };
+                    var options = new ParallelOptions { MaxDegreeOfParallelism = 1 };
                     Parallel.For(0, shipments.Length, options, (i) =>
                     {
                         if (!string.IsNullOrWhiteSpace(shipments[i].ShipmentID))
@@ -83,6 +87,7 @@ namespace HermesLabelCreator
 
                             return;
                         }
+
                         string orderNumber = !string.IsNullOrWhiteSpace(shipments[i].OrderNumber)
                             ? $"{shipments[i].OrderNumber}_"
                             : string.Empty;
@@ -103,16 +108,20 @@ namespace HermesLabelCreator
                                 ending = "K";
                             }
 
-                            string fileName = $"{orderNumber}{shipments[i].PuNumber}{ending}.pdf";
+                            string fileName = $"{(i+1):D3}_{orderNumber}{shipments[i].PuNumber}_{ending}_{DateTime.Now:ddMMyyyy-hhmm}.pdf";
                             string fullFilePath = Path.Combine(fullExportPath, fileName);
                             CreateLabelFile(fullFilePath, response.Delivery.LabelBase64);
+
+                            labelPaths.Add(fullFilePath);
                         }
 
                         if (response.Returns != null && !string.IsNullOrWhiteSpace(response.Returns.LabelBase64))
                         {
-                            string fileName = $"{orderNumber}{shipments[i].PuNumber}R.pdf";
+                            string fileName = $"{(i+1):D3}_{orderNumber}{shipments[i].PuNumber}_R_{DateTime.Now:ddMMyyyy-hhmm}.pdf";
                             string fullFilePath = Path.Combine(fullExportPath, fileName);
                             CreateLabelFile(fullFilePath, response.Returns.LabelBase64);
+
+                            labelPaths.Add(fullFilePath);
                         }
 
                         string barcode = string.Empty;
@@ -121,20 +130,30 @@ namespace HermesLabelCreator
                             barcode = response.Delivery.LabelContent.Import.BarcodeObject[0].BarcodeFormatted;
                         }
 
-                        lock(exportFileStream)
-                        {
-                            ExcelManager.UpdateCell(barcode, "A", (uint)i + 2, worksheetPart);
-                        }
-
                         string barcodeAtHermes = string.Empty;
                         if (response.Delivery.LabelContent?.Export?.BarcodeObject != null && response.Delivery.LabelContent.Export.BarcodeObject.Length > 0)
                         {
                             barcodeAtHermes = response.Delivery.LabelContent.Export.BarcodeObject[0].BarcodeFormatted;
                         }
 
-                        lock (exportFileStream)
+                        if (string.IsNullOrWhiteSpace(barcodeAtHermes))
                         {
-                            ExcelManager.UpdateCell(barcodeAtHermes, "B", (uint)i + 2, worksheetPart);
+                            lock (exportFileStream)
+                            {
+                                ExcelManager.UpdateCell(barcode, "B", (uint)i + 2, worksheetPart);
+                            }
+                        }
+                        else
+                        {
+                            lock (exportFileStream)
+                            {
+                                ExcelManager.UpdateCell(barcode, "A", (uint)i + 2, worksheetPart);
+                            }
+
+                            lock (exportFileStream)
+                            {
+                                ExcelManager.UpdateCell(barcodeAtHermes, "B", (uint)i + 2, worksheetPart);
+                            }
                         }
 
                         if (response.Returns != null)
@@ -175,6 +194,19 @@ namespace HermesLabelCreator
                         File.Delete(exportFile);
                     }
 
+                    if (singleFile && labelPaths.Count > 0)
+                    {
+                        string[] sortedLabelPaths = labelPaths.OrderBy(l => l).ToArray();
+                        string combinedLabelsFilePath = $"{fullExportPath}/Labels_{Path.GetFileNameWithoutExtension(exportFile)}";
+
+                        CombineMultiplePDFs(sortedLabelPaths, combinedLabelsFilePath);
+
+                        foreach (string labelPath in labelPaths)
+                        {
+                            File.Delete(labelPath);
+                        }
+                    }
+
                     //File.Delete(newImportFile);
                     //if (newImportFile != importFile)
                     //{
@@ -205,6 +237,47 @@ namespace HermesLabelCreator
             {
                 writer.Write(bytes, 0, bytes.Length);
             }
+        }
+
+        public static void CombineMultiplePDFs(string[] fileNames, string outFile)
+        {
+            // step 1: creation of a document-object
+            Document document = new Document();
+            //create newFileStream object which will be disposed at the end
+            using (FileStream newFileStream = new FileStream(outFile, FileMode.Create))
+            {
+                // step 2: we create a writer that listens to the document
+                PdfCopy writer = new PdfCopy(document, newFileStream);
+
+                // step 3: we open the document
+                document.Open();
+
+                foreach (string fileName in fileNames)
+                {
+                    // we create a reader for a certain document
+                    PdfReader reader = new PdfReader(fileName);
+                    reader.ConsolidateNamedDestinations();
+
+                    // step 4: we add content
+                    for (int i = 1; i <= reader.NumberOfPages; i++)
+                    {
+                        PdfImportedPage page = writer.GetImportedPage(reader, i);
+                        writer.AddPage(page);
+                    }
+
+                    PRAcroForm form = reader.AcroForm;
+                    if (form != null)
+                    {
+                        writer.AddDocument(reader);
+                    }
+
+                    reader.Close();
+                }
+
+                // step 5: we close the document and writer
+                writer.Close();
+                document.Close();
+            }//disposes the newFileStream object
         }
     }
 }

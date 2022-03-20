@@ -2,6 +2,6 @@
 {
     interface IProcessRunner
     {
-        public void Run(string directoriesPath);
+        public void Run(string directoriesPath, bool singleFile);
     }
 }
